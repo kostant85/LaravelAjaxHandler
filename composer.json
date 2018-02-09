@@ -1,0 +1,27 @@
+{
+    "name": "kostant/laravel-ajax-handler",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kostant1985",
+            "email": "kostant21@yahoo.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "laravel/framework": ">=5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kostant\\LaravelAjaxHandler\\": "src/app/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Kostant\\LaravelAjaxHandler\\Providers\\LaravelAjaxHandlerServiceProvider"
+            ]
+        }
+    }
+}
