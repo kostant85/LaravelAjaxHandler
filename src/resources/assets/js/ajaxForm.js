@@ -7,7 +7,8 @@ $.fn.ajaxForm = function(method) {
         form: this[0],
         url: '',
         onSuccess: function() {},
-        onFail: function() {}
+        onFail: function() {},
+        resetForm: true
     };
 
     var methods = {
@@ -31,6 +32,15 @@ $.fn.ajaxForm = function(method) {
                     type: 'POST',
                     data: formSerialize,
                     success: function (result) {
+                        if (options.resetForm) {
+                            options.form.reset();
+                        }
+                        var userCallback = form.data('callback');
+
+                        if (typeof window[userCallback] === 'function'){
+                            window[userCallback]();
+                        }
+
                         options.onSuccess(result, options.form);
                     },
                     statusCode: {
@@ -53,10 +63,19 @@ $.fn.ajaxForm = function(method) {
                             return false;
                         }
 
-                        var errors = xhr.responseJSON;
+                        var data = xhr.responseJSON;
+                        var errors = data.errors;
+
+                        for (var key in errors) {
+                            var selector = $('#' + key);
+                            selector.parent('.form-group').addClass('has-error');
+                            var message = errors[key][0];
+                            selector.before('<div class="alert alert-danger">' + message + '</div>');
+                        }
+
                         console.log(errors);
                         options.onFail(errors, options.form);
-                    },
+                    }
                 });
 
             })

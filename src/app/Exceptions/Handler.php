@@ -26,5 +26,7 @@ class Handler extends \App\Exceptions\Handler
                 'redirectUrl' => route('login'),
             ], 401);
         }
+
+        return parent::render($request, $exception);
     }
 }
