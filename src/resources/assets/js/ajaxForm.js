@@ -1,92 +1,96 @@
-/**
- * Created by kostya on 25.05.16.
- */
+(function ($) {
 
-$.fn.ajaxForm = function(method) {
-    var defaults = {
-        form: this[0],
-        url: '',
-        onSuccess: function() {},
-        onFail: function() {},
-        resetForm: true
+    let defaults = {
+        onSuccess: function () {},
+        onFail: function () {},
+        resetForm: true,
+        wrapperInputClass: '.form-group',
+        errorInputClass: 'has-error',
+        errorMessageHtml: '<div class="alert alert-danger"></div>',
+        errorMessageClass: '.alert.alert-danger'
     };
 
-    var methods = {
+    // let options;
 
-        init: function(params){
-            var options = $.extend({}, defaults, params);
-            methods._initClick(options);
+    let methods = {
 
-            return this;
-        },
+        init: function (params) {
+            let options = $.extend({}, defaults, params);
+            if (!this.data('ajaxForm')) {
+                this.data('ajaxForm', options);
+                this.on('submit.ajaxForm', function () {
+                    event.preventDefault();
+                    let form = $(this);
+                    let url = form.attr('action');
+                    let formSerialize = form.serialize();
+                    form.find(options.errorInputClass).removeClass(options.errorInputClass);
+                    form.find(options.errorMessageClass).remove();
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        data: formSerialize,
+                        success: function (result) {
+                            if (options.resetForm) {
+                                form[0].reset();
+                            }
+                            let userCallback = form.data('callback');
 
-        _initClick: function (options) {
-            $(document).on('submit', options.form , function(event) {
-                event.preventDefault();
-                if (options.url === '') {
-                    options.url = $(options.form).attr('action');
-                }
-                var formSerialize = $(options.form).serialize();
-                $.ajax({
-                    url: options.url,
-                    type: 'POST',
-                    data: formSerialize,
-                    success: function (result) {
-                        if (options.resetForm) {
-                            options.form.reset();
-                        }
-                        var userCallback = form.data('callback');
+                            if (typeof window[userCallback] === 'function') {
+                                window[userCallback]();
+                            }
 
-                        if (typeof window[userCallback] === 'function'){
-                            window[userCallback]();
-                        }
+                            options.onSuccess(result, form);
+                        },
+                        statusCode: {
+                            401: function (xhr) {
+                                let errors = xhr.responseJSON;
 
-                        options.onSuccess(result, options.form);
-                    },
-                    statusCode: {
-                        401: function(xhr) {
-                            var errors = xhr.responseJSON;
-
-                            if (errors.success === false) {
-                                var redirectUrl = errors.data.redirectUrl;
-                                window.location = redirectUrl;
+                                if (errors.success === false) {
+                                    let redirectUrl = errors.data.redirectUrl;
+                                    window.location = redirectUrl;
+                                }
+                            },
+                            403: function (xhr) {
+                                let errors = xhr.responseJSON;
+                                alert(errors.message);
                             }
                         },
-                        403: function(xhr) {
-                            var errors = xhr.responseJSON;
-                            alert(errors.message);
+                        error: function (xhr, status, error) {
+
+                            if (typeof this.statusCode[xhr.status] != 'undefined') {
+                                return false;
+                            }
+
+                            let data = xhr.responseJSON;
+                            let errors = data.errors;
+
+                            for (let key in errors) {
+                                let selector = $('#' + key);
+                                selector.parent(options.wrapperInputClass).addClass(options.errorInputClass);
+                                let message = errors[key][0];
+                                let errorHtml = $(options.errorMessageHtml).html(message);
+                                selector.before(errorHtml);
+                            }
+
+                            console.log(errors);
+                            options.onFail(errors, form);
                         }
-                    },
-                    error: function(xhr, status, error) {
+                    });
+                })
+            }
 
-                        if (typeof this.statusCode[xhr.status] != 'undefined') {
-                            return false;
-                        }
-
-                        var data = xhr.responseJSON;
-                        var errors = data.errors;
-
-                        for (var key in errors) {
-                            var selector = $('#' + key);
-                            selector.parent('.form-group').addClass('has-error');
-                            var message = errors[key][0];
-                            selector.before('<div class="alert alert-danger">' + message + '</div>');
-                        }
-
-                        console.log(errors);
-                        options.onFail(errors, options.form);
-                    }
-                });
-
-            })
+            return this;
         }
     };
 
-    if (methods[method]) {
-        return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
-    } else if (typeof method === 'object' || !method) {
-        return methods.init.apply(this, arguments);
-    } else {
-        $.error('Method "' + method + '" is not defined');
-    }
-};
+    $.fn.ajaxForm = function (method) {
+
+        if (methods[method]) {
+            return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+        } else if (typeof method === 'object' || !method) {
+            return methods.init.apply(this, arguments);
+        } else {
+            $.error('Method "' + method + '" is not defined');
+        }
+    };
+})(jQuery)

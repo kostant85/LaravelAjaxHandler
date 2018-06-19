@@ -27,7 +27,7 @@ trait RespondsJson
     public function jsonError(string $message, iterable $data = [], int $status = 400): JsonResponse
     {
         return response()->json(
-            collect(['success' => false, 'message' => $message, 'data' => $data]),
+            collect(['success' => false, 'message' => $message, 'errors' => $data]),
             $status
         );
     }
